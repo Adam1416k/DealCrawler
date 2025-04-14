@@ -1,0 +1,24 @@
+# Ignore virtual environments
+venv/
+
+# Ignore Python cache files
+__pycache__/
+*.pyc
+*.pyo
+
+# Ignore editor-specific files (e.g. VS Code)
+.vscode/
+
+# Ignore environment or config files
+.env
+.env.*
+
+# Ignore deal output files (optional if generated)
+*.json
+
+# Ignore Jupyter notebooks (optional)
+*.ipynb
+
+# Ignore system files
+.DS_Store
+Thumbs.db
