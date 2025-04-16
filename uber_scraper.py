@@ -1,168 +1,164 @@
 import requests
 import json
 import time
+import urllib.parse
+import re
 
-# --- Configuration ---
+def encode_location(area):
+    """
+    Build and URL-encode a JSON string representing the location data.
+    This is used to update the "uev2.loc" cookie so that Uber Eats returns deals
+    for the given area.
+    """
+    loc_data = {
+        "address": {
+            "address1": f"Area {area['name']}",
+            "address2": "",
+            "aptOrSuite": "",
+            "eaterFormattedAddress": f"Area {area['name']}, Stockholm, Sweden",
+            "subtitle": area["name"],
+            "title": area["name"],
+            "uuid": ""
+        },
+        "latitude": area["lat"],
+        "longitude": area["lon"],
+        "reference": "",
+        "referenceType": "google_places",
+        "type": "google_places",
+        "addressComponents": {
+            "city": "Stockholm",
+            "countryCode": "SE",
+            "firstLevelSubdivisionCode": "Stockholms län",
+            "postalCode": area["name"]
+        },
+        "categories": ["address_point"],
+        "originType": "user_autocomplete",
+        "source": "rev_geo_reference",
+        "userState": "Unknown"
+    }
+    loc_json = json.dumps(loc_data)
+    return urllib.parse.quote(loc_json)
 
-# Headers to mimic a browser request.
-HEADERS = {
-    "Accept": "*/*",
-    "Accept-Encoding": "gzip, deflate, br, zstd",
-    "Accept-Language": "sv-SE,sv;q=0.9,en-US;q=0.8,en;q=0.7",
-    "Content-Type": "application/json",
-    "User-Agent": "Mozilla/5.0 (X11; Linux aarch64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 CrKey/1.54.250320",
-    "x-csrf-token": "x"
-}
-
-# Uber Eats API endpoint.
-API_URL = "https://www.ubereats.com/_p/api/getFeedV1?localeCode=se"
-
-# List of areas in Stockholm you want to scrape.
-# (For each area you need an area_id, a name, and coordinates.)
+# Define the areas with postal codes and coordinates.
 areas = [
-    {"area_id": "13145", "name": "Nacka", "latitude": 59.315202, "longitude": 18.200045},
-    {"area_id": "13562", "name": "Tyresö", "latitude": 59.25424, "longitude": 18.276526}
-    # Add more area definitions here; you mentioned roughly 40 areas.
-    # {"area_id": "...", "name": "Area Name", "latitude": <lat>, "longitude": <lon>},
+    {"name": "13147", "lat": 59.314746, "lon": 18.200409},
+    {"name": "13563", "lat": 59.25424,  "lon": 18.276526}
+    # Extend this list as needed.
 ]
 
-# --- Extraction Function ---
+# Uber Eats API endpoint for deals.
+url = "https://www.ubereats.com/_p/api/allStoresV1?localeCode=se-en"
 
-def extract_deal_from_item(item):
-    """
-    Extracts deal information from a store item, which may be encountered as either:
-      - A REGULAR_STORE item (with the store data in item["store"])
-      - An item from a REGULAR_CAROUSEL (which is the store data itself)
-    
-    This function looks for:
-      - The store name (from title.text)
-      - A link (by prefixing the relative URL from actionUrl)
-      - An image (the first item from image.items)
-      - The deal type from signposts (if available either in the top-level item or nested within store)
-      - Delivery time from meta where badgeType == "ETD"
-      - Rating information (if available)
-    """
-    # If this is a REGULAR_STORE item, the actual data is nested under "store".
-    if "store" in item:
-        store_data = item["store"]
-    else:
-        store_data = item
+# The payload used by the API.
+payload = {
+    "date": "",
+    "startTime": 0,
+    "endTime": 0,
+    "sortAndFilters": [{"uuid": "33e0f7cc-8927-4dac-a92e-19a296aab097"}],
+    "options": [{"uuid": "g996476c-2b1b-4db2-b40a-13d43cb117dc"}],
+    "uuid": "g996476c-2b1b-4db2-b40a-13d43cb117dc",
+    "surfaceName": "HOME",
+    "verticalType": ""
+}
 
-    # Extract basic information.
-    name = store_data.get("title", {}).get("text", "")
-    action_url = store_data.get("actionUrl", "")
-    link = f"https://www.ubereats.com{action_url}" if action_url else ""
-    image = ""
-    image_items = store_data.get("image", {}).get("items", [])
-    if image_items:
-        image = image_items[0].get("url", "")
-    
-    # Attempt to find deal information in "signposts".
-    deal_type = ""
-    # First check the top-level item.
-    if "signposts" in item and item["signposts"]:
-        deal_type = item["signposts"][0].get("text", "")
-    # Then, check if the nested store data includes it.
-    elif "signposts" in store_data and store_data["signposts"]:
-        deal_type = store_data["signposts"][0].get("text", "")
-    
-    # Look for delivery time in the meta data (badgeType "ETD").
-    delivery_time = ""
-    meta_list = store_data.get("meta", [])
-    for meta in meta_list:
-        if meta.get("badgeType") == "ETD":
-            delivery_time = meta.get("text", "")
-            break
+# Headers to mimic a browser.
+headers = {
+    "accept": "*/*",
+    "content-type": "application/json",
+    "x-csrf-token": "x",  # Placeholder – update if needed.
+    "user-agent": ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                   "AppleWebKit/537.36 (KHTML, like Gecko) "
+                   "Chrome/135.0.0.0 Safari/537.36"),
+    "origin": "https://www.ubereats.com",
+    "referer": "https://www.ubereats.com/se-en/feed"
+    # Add other headers as needed.
+}
 
-    # Get rating information if available.
-    rating = ""
-    rating_count = ""
-    if "rating" in store_data:
-        rating = store_data.get("rating", {}).get("text", "")
-        rating_count = store_data.get("rating", {}).get("accessibilityText", "")
-    
-    return {
-        "name": name,
-        "link": link,
-        "image": image,
-        "deal_type": deal_type,
-        "rating": rating,
-        "rating_count": rating_count,
-        "delivery_time": delivery_time
+all_deals = []  # List to hold the reformatted deals from all areas.
+
+for area in areas:
+    print(f"Scraping deals for area: {area['name']} (lat: {area['lat']}, lon: {area['lon']})")
+    loc_cookie_value = encode_location(area)
+    cookies = {
+        "uev2.loc": loc_cookie_value
+        # Include additional cookies if needed.
     }
-
-# --- Scraping Function ---
-
-def scrape_area(area):
-    """
-    Sends a POST request for the given area (with specified latitude, longitude, and address).
-    The payload includes an explicit dining mode and a filter for deals ("dealsFilter": "DEALS").
-    This function handles both REGULAR_CAROUSEL and REGULAR_STORE item types.
-    """
-    # Adjust the payload based on your browser’s request if needed.
-    payload = {
-        "request": {
-            "location": {
-                "latitude": area["latitude"],
-                "longitude": area["longitude"],
-                "address": area["name"]
-            },
-            "diningMode": "DELIVERY",  # Explicitly setting dining mode.
-            "filters": {
-                "dealsFilter": "DEALS"
-            }
-        }
-    }
-    
     try:
-        response = requests.post(API_URL, headers=HEADERS, json=payload)
+        response = requests.post(url, headers=headers, cookies=cookies, json=payload)
         response.raise_for_status()
         data = response.json()
     except Exception as e:
-        print(f"Error scraping area {area['name']}: {e}")
-        return []
-    
-    deals = []
-    if data.get("status") == "success":
-        feed_items = data.get("data", {}).get("feedItems", [])
-        for item in feed_items:
-            item_type = item.get("type", "")
-            if item_type == "REGULAR_CAROUSEL":
-                carousel = item.get("carousel", {})
-                stores = carousel.get("stores", [])
-                for store_item in stores:
-                    deal = extract_deal_from_item(store_item)
-                    deal["area_id"] = area["area_id"]
-                    deals.append(deal)
-            elif item_type == "REGULAR_STORE":
-                # Pass the entire item so that we can check both top-level and nested "signposts".
-                deal = extract_deal_from_item(item)
-                deal["area_id"] = area["area_id"]
-                deals.append(deal)
-            else:
-                # Optionally process other item types if necessary.
-                continue
-    else:
-        print(f"Non-success status for {area['name']}: {data.get('status')}")
-    
-    return deals
+        print(f"Error fetching data for area {area['name']}: {e}")
+        continue
 
-# --- Main Routine ---
+    feed_items = data.get("data", {}).get("feedItems", [])
+    print(f"Found {len(feed_items)} items for area {area['name']}.")
 
-def main():
-    all_deals = []
-    for area in areas:
-        print(f"Scraping deals for {area['name']}...")
-        deals = scrape_area(area)
-        print(f"Found {len(deals)} deal(s) in {area['name']}")
-        all_deals.extend(deals)
-        # Short delay to be polite with the server.
-        time.sleep(1)
+    for item in feed_items:
+        # Process only regular store items
+        if item.get("type") != "REGULAR_STORE":
+            continue
+        
+        store = item.get("store", {})
+        
+        # Extract deal/promotion from signposts.
+        signposts = store.get("signposts", [])
+        deal_type = ""
+        if signposts and isinstance(signposts, list):
+            deal_type = signposts[0].get("text", "").strip()
+        # Skip if there's no actual deal (i.e. no promotion text).
+        if not deal_type:
+            continue
+
+        # Remap and extract fields according to the desired output.
+        area_id = area["name"]
+        name = store.get("title", {}).get("text", "")
+        link = store.get("actionUrl", "")
+        # Prepend domain if the link is a relative URL.
+        if link and link.startswith("/"):
+            link = "https://www.ubereats.com" + link
+        
+        image = ""
+        if store.get("image", {}).get("items"):
+            image = store["image"]["items"][0].get("url", "")
+        
+        # Look for the meta item with badgeType "ETD" to extract the estimated delivery time.
+        delivery_time = ""
+        meta_list = store.get("meta", [])
+        for meta in meta_list:
+            if meta.get("badgeType") == "ETD":
+                delivery_time = meta.get("text", "")
+                break
+        # Skip record if no valid estimated delivery time is found.
+        if not delivery_time or "kr" in delivery_time.lower():
+            continue
+
+        rating = store.get("rating", {}).get("text", "")
+        rating_accessibility = store.get("rating", {}).get("accessibilityText", "")
+        # Extract the review count from the accessibility text.
+        rating_count = ""
+        match = re.search(r'([\d,]+)\s+reviews', rating_accessibility)
+        if match:
+            rating_count = f"({match.group(1)})"
+        
+        deal_item = {
+            "area_id": area_id,
+            "name": name,
+            "link": link,
+            "image": image,
+            "deal_type": deal_type,
+            "rating": rating,
+            "rating_count": rating_count,
+            "delivery_time": delivery_time
+        }
+        all_deals.append(deal_item)
     
-    # Save the collected deals to a JSON file.
-    with open("uber_eats_deals.json", "w", encoding="utf-8") as f:
-        json.dump(all_deals, f, ensure_ascii=False, indent=4)
-    print("Scraping complete. Data saved to uber_eats_deals.json")
+    # Sleep briefly before the next request.
+    time.sleep(1)
 
-if __name__ == "__main__":
-    main()
+# Save the filtered and properly mapped deals to a JSON file.
+output_filename = "uber_deals.json"
+with open(output_filename, "w", encoding="utf-8") as f:
+    json.dump(all_deals, f, ensure_ascii=False, indent=4)
+
+print(f"Scraping complete. Results saved to {output_filename}")

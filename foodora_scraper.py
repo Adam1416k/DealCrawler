@@ -1,82 +1,206 @@
-from playwright.sync_api import sync_playwright
-from bs4 import BeautifulSoup
+import requests
 import json
 import time
 
-def scrape_foodora_deals_playwright():
-    with sync_playwright() as p:
-        browser = p.chromium.launch(
-            headless=False,
-            args=["--window-position=0,10000"]
-        )
-        page = browser.new_page(locale="sv-SE")
+# Foodora GraphQL API endpoint
+url = "https://op.fd-api.com/rlp-service/query"
 
-        url = "https://www.foodora.se/restaurants/new?lat=59.315030489085814&lng=18.19989712571292&has_discount=1"
-        page.goto(url)
+# Headers that mimic a browser request – update session-specific headers as needed.
+headers = {
+    "accept": "application/json, text/plain, */*",
+    "content-type": "application/json;charset=UTF-8",
+    "origin": "https://www.foodora.se",
+    "app-version": "VENDOR-LIST-MICROFRONTEND.25.16.0001",
+    "perseus-client-id": "1744813142542.239060138092136926.b1trl6cncg",
+    "perseus-session-id": "1744813142542.716272132247331471.g6whas42lc",
+    "platform": "web",
+    "user-agent": (
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/135.0.0.0 Safari/537.36"
+    ),
+    "x-fp-api-key": "volo"
+}
 
-        time.sleep(5)
-        page.mouse.wheel(0, 3000)
-        time.sleep(5)
+# Define the areas you want to scrape (example areas in Stockholm)
+areas = [
+    {"name": "13145", "lat": 59.315202, "lon": 18.200045},
+    {"name": "13563", "lat": 59.25424,  "lon": 18.276526}
+]
 
-        try:
-            page.wait_for_selector("li.vendor-tile-new-l", timeout=10000)
-        except Exception:
-            print("⚠️ Still couldn’t find deal tiles, exiting.")
-            browser.close()
-            return
+all_deals = []  # This list will hold our scraped deals
 
-        soup = BeautifulSoup(page.content(), "html.parser")
-        cards = soup.find_all("li", class_="vendor-tile-new-l")
-        deals = []
+# Define the GraphQL query.
+graphql_query = """
+query getOrganicListing(
+  $includeCarousels: Boolean!,
+  $includeDynamicSearchbarConfig: Boolean!,
+  $includeJoker: Boolean!,
+  $includeSwimlanes: Boolean!,
+  $input: OrganicListingInput!,
+  $customer_id: String!,
+  $customer_type: String!,
+  $expedition_type: String!,
+  $feature_flags: [FeatureFlagInput!]!,
+  $joker_offers: JokerOffersInput!,
+  $language_id: String!,
+  $latitude: Float!,
+  $locale: String!,
+  $longitude: Float!,
+  $organic_listing: OrganicListingSettingsInput!,
+  $subscription: SubscriptionInput!,
+  $swimlanes: SwimlanesInput!
+) {
+  rlp {
+    organic_listing(
+      input: $input,
+      customer_id: $customer_id,
+      customer_type: $customer_type,
+      expedition_type: $expedition_type,
+      feature_flags: $feature_flags,
+      joker_offers: $joker_offers,
+      language_id: $language_id,
+      latitude: $latitude,
+      locale: $locale,
+      longitude: $longitude,
+      organic_listing: $organic_listing,
+      subscription: $subscription,
+      swimlanes: $swimlanes
+    ) {
+      items {
+        id
+        code
+        budget
+        name
+        tag
+        rating
+        review_number
+        latitude
+        longitude
+        minimum_order_amount
+        delivery_duration_range {
+          lower_limit_in_minutes
+          upper_limit_in_minutes
+        }
+        hero_listing_image
+        url_key
+      }
+      views {
+        budgets
+        configuration
+        cuisines
+        discounts
+        food_characteristics
+        delivery_providers
+        limit
+        ncr_place
+        ncr_screen
+        offset
+        payment_types
+        quick_filters
+        tag_label_metadata
+        use_free_delivery_label
+      }
+    }
+  }
+}
+"""
 
-        for card in cards:
-            a_tag = card.find("a", href=True)
-            name_tag = card.find("div", class_="vendor-name")
-            deal_type_tag = card.find("div", class_="bds-c-tag--variant-gradient")
-            rating_tag = card.find("span", class_="bds-c-rating__label-primary")
-            rating_count_tag = card.find("span", class_="bds-c-rating__label-secondary")
-            image_tag = card.find("img", class_="vendor-tile-revamped-image")
+# For each area, build the variables payload and send the POST request.
+for area in areas:
+    print(f"Scraping deals for area {area['name']} (lat: {area['lat']}, lon: {area['lon']})")
+    
+    variables = {
+        "includeCarousels": False,
+        "includeDynamicSearchbarConfig": False,
+        "includeJoker": False,
+        "includeSwimlanes": False,
+        "input": {
+            "latitude": area["lat"],
+            "longitude": area["lon"],
+            "locale": "sv_SE",
+            "language_id": "4"
+            # Add other keys if necessary
+        },
+        "customer_id": "",
+        "customer_type": "REGULAR",
+        "expedition_type": "DELIVERY",
+        "feature_flags": [
+            {"name": "dynamic-pricing-indicator", "value": "Variant"},
+            {"name": "saver-delivery-upper-funnel", "value": "Control"},
+            {"name": "pd-mp-homescreen-full-federation", "value": "Control"}
+        ],
+        "joker_offers": {"single_discount": False},
+        "language_id": "4",
+        "latitude": area["lat"],
+        "locale": "sv_SE",
+        "longitude": area["lon"],
+        "organic_listing": {
+            "views": [{
+                "budgets": "",
+                "configuration": "Original",
+                "cuisines": "",
+                "discounts": "",
+                "food_characteristics": "",
+                "delivery_providers": "",
+                "limit": 50,
+                "ncr_place": "list",
+                "ncr_screen": "shop_list",
+                "offset": 0,
+                "payment_types": "",
+                "quick_filters": "has_discount",
+                "tag_label_metadata": False,
+                "use_free_delivery_label": True
+            }]
+        },
+        "subscription": {"status": "NON_ELIGIBLE", "has_benefits": False},
+        "swimlanes": {"config": "Original"}
+    }
+    
+    payload = {
+        "query": graphql_query,
+        "variables": variables
+    }
+    
+    try:
+        response = requests.post(url, headers=headers, json=payload)
+        response.raise_for_status()
+        data = response.json()
+    except Exception as e:
+        print(f"Error fetching data for area {area['name']}: {e}")
+        if 'response' in locals() and response is not None:
+            print("Response content:", response.text)
+        continue
 
-            # Info tags
-            info_rows = card.find_all("div", class_="vendor-info-row-text")
-            delivery_time = None
-            price_range = None
-            category = None
+    # Extract deal items from the response. Note: they are nested under data → rlp → organic_listing.
+    items = data.get("data", {}).get("rlp", {}).get("organic_listing", {}).get("items", [])
+    print(f"Found {len(items)} deals for area {area['name']}.")
+    
+    for item in items:
+        deal_item = {
+            "area_id": area["name"],
+            "id": item.get("id"),
+            "code": item.get("code"),
+            "budget": item.get("budget"),
+            "name": item.get("name"),
+            "tag": item.get("tag"),
+            "rating": item.get("rating"),
+            "review_number": item.get("review_number"),
+            "latitude": item.get("latitude"),
+            "longitude": item.get("longitude"),
+            "minimum_order_amount": item.get("minimum_order_amount"),
+            "delivery_time_lower": item.get("delivery_duration_range", {}).get("lower_limit_in_minutes"),
+            "delivery_time_upper": item.get("delivery_duration_range", {}).get("upper_limit_in_minutes"),
+            "hero_listing_image": item.get("hero_listing_image"),
+            "url_key": item.get("url_key")
+        }
+        all_deals.append(deal_item)
+    
+    time.sleep(1)  # Pause between requests
 
-            for row in info_rows:
-                text = row.get_text(strip=True)
-                if "min" in text:
-                    delivery_time = text
-                elif text in {"$", "$$", "$$$"}:
-                    price_range = text
-                elif len(text) > 1 and not text.startswith("Fri") and not category:
-                    category = text
+# Save all collected deals to a JSON file.
+output_filename = "foodora_deals.json"
+with open(output_filename, "w", encoding="utf-8") as f:
+    json.dump(all_deals, f, ensure_ascii=False, indent=4)
 
-            name = name_tag.get_text(strip=True) if name_tag else None
-            deal_type = deal_type_tag.get_text(strip=True) if deal_type_tag else None
-            rating = rating_tag.get_text(strip=True) if rating_tag else None
-            rating_count = rating_count_tag.get_text(strip=True).strip("()") if rating_count_tag else None
-            link = f"https://www.foodora.se{a_tag['href']}" if a_tag else None
-            image = image_tag["src"] if image_tag else None
-
-            if name:
-                deals.append({
-                    "name": name,
-                    "deal_type": deal_type,
-                    "delivery_time": delivery_time,
-                    "price_range": price_range,
-                    "category": category,
-                    "rating": rating,
-                    "rating_count": rating_count,
-                    "image": image,
-                    "link": link
-                })
-
-        with open("foodora_deals.json", "w", encoding="utf-8") as f:
-            json.dump(deals, f, indent=2, ensure_ascii=False)
-
-        print(f"✅ Found {len(deals)} deals and saved to foodora_deals.json")
-        browser.close()
-
-if __name__ == "__main__":
-    scrape_foodora_deals_playwright()
+print(f"Scraping complete. Results saved to {output_filename}")
