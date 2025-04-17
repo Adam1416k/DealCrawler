@@ -2,6 +2,7 @@
 import requests
 import json
 import time
+import re
 
 # ————————————— Your areas —————————————
 areas = [
@@ -159,15 +160,19 @@ for area in areas:
         cnt = it.get("review_number") or 0
         rating_count = f"({cnt:,})" if cnt else ""
 
+        image_url = it.get("hero_listing_image", "")
+        code_match = re.search(r'/([^/]+?)-listing\.jpg', image_url)
+        code = code_match.group(1) if code_match else ""
+
         all_deals.append({
             "area_id":      area["name"],
             "name":         it.get("name", ""),
-            "link":         f"https://www.foodora.se/restaurant/{it.get('url_key','')}",
-            "image":        it.get("hero_listing_image", ""),
+            "link":         f"https://www.foodora.se/restaurant/{code}/{it.get('url_key','')}",
+            "image":        image_url,
             "deal_type":    deal_text,
             "rating":       str(it.get("rating", "")),
             "rating_count": rating_count,
-            "delivery_time":delivery
+            "delivery_time": delivery
         })
 
     # be polite
