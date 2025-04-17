@@ -37,3 +37,7 @@ yarn-error.log*
 # Local env vars (if you ever add them)
 .env
 .env.*.local
+
+# client/
+client/node_modules/
+client/dist/
