@@ -136,11 +136,11 @@ for area in areas:
                  .get("organic_listing", {})
                  .get("views", []))
     if not views:
-        print("  ⚠️  no views returned")
+        print("No views returned")
         continue
 
     items = views[0].get("items", [])
-    print(f"  ✅ {len(items)} total vendors")
+    print(f"{len(items)} total vendors")
 
     for it in items:
         # pick only the "DEAL" tag
@@ -177,4 +177,4 @@ for area in areas:
 with open("foodora_deals.json", "w", encoding="utf-8") as f:
     json.dump(all_deals, f, ensure_ascii=False, indent=2)
 
-print(f"\n🎉 Done – {len(all_deals)} real deals saved to foodora_deals.json")
+print(f"\nDone – {len(all_deals)} deals saved to foodora_deals.json")
