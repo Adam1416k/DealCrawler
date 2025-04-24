@@ -35,7 +35,8 @@ def main():
                 item["service"] = service
                 combined.append(item)
 
-    with open("all_deals.json", "w", encoding="utf-8") as f:
+    out_path = os.path.join("frontend", "public", "all_deals.json")
+    with open(out_path, "w", encoding="utf-8") as f:
         json.dump(combined, f, ensure_ascii=False, indent=2)
     print(f"\n✅ Done – {len(combined)} deals → all_deals.json")
 
