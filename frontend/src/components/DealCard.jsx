@@ -3,35 +3,51 @@
 import React from 'react';
 
 export default function DealCard({ deal }) {
+  // map internal service keys to display names
+  const serviceNames = {
+    foodora:   'Foodora',
+    wolt:      'Wolt',
+    uber_eats: 'Uber Eats',
+  };
+  const vendorDisplay = serviceNames[deal.service] || deal.service;
+
+  // prepare rating text (fallback to dash)
+  const ratingText = deal.rating ? deal.rating : '-';
+
+  // extract delivery time number and append “min” (or dash)
+  const timeMatch = deal.delivery_time && deal.delivery_time.match(/\d+/);
+  const timeDisplay = timeMatch ? `${timeMatch[0]} min` : '-';
+
   return (
     <a
       href={deal.link}
       target="_blank"
       rel="noopener noreferrer"
-      className="
-        block bg-white rounded-lg shadow 
-        hover:shadow-lg transition
-        p-2 md:p-4 no-underline
-      "
+      className="deal-card"
     >
-      {/* exact 128px tall container */}
-      <div className="w-full h-[128px] overflow-hidden rounded-lg">
+      {/* IMAGE + TOP BADGES */}
+      <div className="relative">
         <img
           src={deal.image}
           alt={deal.name}
-          className="w-full h-full object-cover object-center"
+          className="card-image"
         />
+
+        <div className="badge-group">
+          <span className="deal-badge">{deal.deal_type}</span>
+          <span className="vendor-badge">{vendorDisplay}</span>
+        </div>
       </div>
 
-      <h2 className="mt-2 font-semibold text-xs md:text-base text-black">
-        {deal.name}
-      </h2>
-      <p className="mt-1 text-[10px] md:text-sm text-black">
-        {deal.deal_type}
-      </p>
-      <div className="mt-2 flex items-center justify-between text-[10px] md:text-sm text-black">
-        <span className="capitalize">{deal.service.replace('_', ' ')}</span>
-        <span>{deal.rating} ⭐</span>
+      {/* CARD CONTENT */}
+      <div className="card-content">
+        <h2 className="card-title">{deal.name}</h2>
+      </div>
+
+      {/* BOTTOM-RIGHT BADGES */}
+      <div className="bottom-badges">
+        <span className="time-badge">{timeDisplay} 🚗</span>
+        <span className="rating-badge">{ratingText} ⭐</span>
       </div>
     </a>
   );

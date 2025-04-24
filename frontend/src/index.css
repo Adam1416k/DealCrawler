@@ -1,20 +1,246 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* ─── GLOBAL FONT ─────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 @layer base {
-  a,
-  a:link,
-  a:visited,
-  a:hover,
-  a:active {
+  html, body {
+    font-family: 'Inter', sans-serif;
+  }
+  /* keep your link resets… */
+  a, a:link, a:visited, a:hover, a:active {
     color: black !important;
     text-decoration: none !important;
   }
 }
 
-/* Prevent any horizontal scrolling */
-html, body {
-  overflow-x: hidden;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  a, a:link, a:visited, a:hover, a:active {
+    color: black !important;
+    text-decoration: none !important;
+  }
 }
 
+/* ─── GRID LAYOUT ───────────────────────────────── */
+.deal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.7rem;           /* 16px between cards */
+  padding-top: 2rem;
+}
+
+/* ─── CARD STYLES ────────────────────────────── */
+.deal-card {
+  position: relative;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.12),   /* soft, small ambient shadow */
+    0 1px 2px rgba(0, 0, 0, 0.24);   /* slightly darker core shadow */
+  transition:
+    box-shadow 250ms ease-in-out,
+    transform   250ms ease-in-out;
+  display: block;
+  text-decoration: none;
+}
+
+.deal-card:hover {
+  /* boost and spread the shadows, then lift up 2px: */
+  box-shadow:
+    0 10px 15px rgba(0, 0, 0, 0.15),  /* larger, softer ambient */
+    0 4px 6px   rgba(0, 0, 0, 0.20);  /* richer key-light shadow */
+  transform: translateY(-2px);
+}
+
+/* ─── IMAGE ─────────────────────────────────── */
+.deal-card img {
+  width: 100%;
+  height: 128px;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+/* ─── CONTENT ──────────────────────────────── */
+.card-content {
+  padding: 0.5rem;
+  padding-bottom: 2.5rem;
+}
+
+.card-title {
+  margin: 0.5rem 0;               /* only 4px above & below */
+  font-weight: 700;   
+  font-size: 1rem;             /* bold */
+
+  /* never overlap the badge area */
+  max-width: calc(100% - 1rem);    /* reserve ~4rem for the badge */
+  
+  /* allow multi-line wrapping at spaces only */
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: normal;
+}
+
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+/* ─── BOTTOM BADGES CONTAINER ───────────────────── */
+.bottom-badges {
+  position: absolute;
+  bottom: 0.75rem;       /* 12px from the bottom edge */
+  right: 0.75rem;        /* 12px from the right edge */
+  display: flex;
+  gap: 0.5rem;           /* 8px between pills */
+  align-items: center;   /* vertically center them if they ever differ in height */
+  pointer-events: none;  /* clicks fall through */
+  z-index: 10;
+}
+
+/* ─── UNIFIED PILL STYLES ───────────────────────── */
+.time-badge,
+.rating-badge {
+  position: static;          /* let the wrapper position it */
+  background: #fff;          /* white pill */
+  border: 1px solid #e5e7eb; /* gray-200 border */
+  color: #111827;            /* gray-900 text */
+  padding: 0.25rem 0.5rem;    /* 4px top/bottom, 8px left/right */
+  border-radius: 9999px;     /* full pill */
+  font-size: 0.75rem;        /* 12px */
+  font-weight: 500;          /* medium */
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  white-space: nowrap;       /* keep the text on one line */
+}
+
+/* ─── BADGE GROUP (stacked) ───────────────────────── */
+.badge-group {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  display: flex;
+  flex-direction: column;
+
+  /* ← Add this: stop children from stretching full width */
+  align-items: flex-start;
+
+  gap: 0.25rem;    /* 4px between the two pills */
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* ─── DEAL BADGE ───────────────────────────────── */
+.deal-badge {
+  /* remove any absolute positioning here */
+  position: static;
+  display: inline-block;
+  background-color: #db2777;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: normal;
+  max-width: calc(100% - 1rem);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+/* ─── VENDOR BADGE ───────────────────────────────── */
+.vendor-badge {
+  /* keep it inline‐block so its width fits its text + padding */
+  display: inline-block;
+
+  /* everything else as before… */
+  background-color: #374151;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+/* ─── FILTER BAR STYLES ───────────────────────────────── */
+
+/* container around all filters */
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;                   /* space between groups */
+  background: #fff;
+  border: 1px solid #e5e7eb;   /* gray-200 */
+  border-radius: 12px;         /* match cards */
+  padding: 1rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  margin-bottom: 1.5rem;
+  margin-top: 0.5rem;
+}
+
+/* each filter (service or rating) */
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.filter-toggle {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  transition: background 200ms ease, box-shadow 200ms ease;
+}
+
+.filter-toggle:hover {
+  background: #f9fafb;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+/* labels ("Service:", "Min Rating:") */
+.filter-label {
+  font-weight: 600;
+  color: #111827;    /* gray-900 */
+  font-size: 0.875rem;
+}
+
+/* wrapper for the checkbox options */
+.filter-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* style each individual checkbox + text */
+.filter-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  color: #4b5563;              /* gray-700 */
+}
+
+/* the rating <select> dropdown */
+.filter-select {
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  padding: 0.25rem 0.5rem;
+  height: 2.25rem;          /* fixed height (approx 36px) */
+  font-size: 0.875rem;
+  color: #4b5563;
+  background: #fff;
+  line-height: 1.25rem;     /* match the font size */
+}
