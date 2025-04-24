@@ -19,19 +19,18 @@ export default function App() {
     .filter(d => (filters.rating === null || parseFloat(d.rating) >= filters.rating));
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">DealCrawler</h1>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-4 mt-4">      <h1 className="text-xl sm:text-2xl font-bold mb-4">DealCrawler</h1>
       <div className="mb-4">
         <input
           type="text"
           placeholder="Enter postal code"
           value={postal}
           onChange={e => setPostal(e.target.value)}
-          className="border p-2 rounded w-full md:w-1/3"
+          className="border p-2 text-sm rounded w-full sm:w-1/3"
         />
       </div>
       <FilterBar filters={filters} setFilters={setFilters} />
-      <div className="grid grid-cols-2 gap-4 mt-4">
+      <div className="grid grid-cols-2 gap-2 md:gap-4 mt-4">
         {filtered.map(deal => (
           <DealCard key={deal.link} deal={deal} />
         ))}
