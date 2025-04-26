@@ -1,20 +1,19 @@
-// src/App.jsx
-
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import FilterBar from './components/FilterBar';
 import DealCard from './components/DealCard';
 
 export default function App() {
   const [deals, setDeals] = useState([]);
   const [postal, setPostal] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
-    service:     [],    // ['foodora','wolt','uber_eats']
-    cuisine:     [],    // e.g. ['Burgers','Sushi']
-    dealCategory: [],   // ['Percentage off','Fixed-amount off','Other']
-    rating:      null   // 1–4
+    service: [], cuisine: [], dealCategory: [], rating: null,
   });
-  const [sortBy, setSortBy] = useState('');      // '', 'fastest', 'rating'
+  const [sortBy, setSortBy] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [language, setLanguage] = useState('sv');
+  const postalInputRef = useRef();
 
   useEffect(() => {
     fetch('/all_deals.json')
@@ -22,38 +21,106 @@ export default function App() {
       .then(data => setDeals(data));
   }, []);
 
-  // ── categorize raw deal_type into buckets ─────────
+  const translations = {
+    en: {
+      siteTitle:         'DealCrawler',
+      postalPlaceholder: 'Postal code',
+      emptyEnter:        'Enter postal code to see deals',
+      enterPostalButton: 'Enter postal code',
+      searchPlaceholder: 'Search restaurants…',
+      showFilters:       'Show Filters',
+      hideFilters:       'Hide Filters',
+      sortOptions: {
+        relevance: 'Relevance',
+        fastest:   'Fastest Delivery',
+        rating:    'Highest Rating',
+      },
+      menu: {
+        languageLabel: 'Language',
+        contact:       'Contact Us',
+        about:         'About',
+      },
+      filterBar: {
+        vendorLabel:       'Vendor:',
+        cuisineLabel:      'Cuisine:',
+        dealTypeLabel:     'Deal Type:',
+        minRatingLabel:    'Rating:',
+        anyOption:         'Any',
+        dealTypeOptions: {                     // ← NEW
+          'Percentage off':    'Percentage off',
+          'Fixed-amount off':  'Fixed-amount off',
+          'Other':              'Other',
+        }
+      }
+    },
+    sv: {
+      siteTitle:         'DealCrawler',
+      postalPlaceholder: 'Postnummer',
+      emptyEnter:        'Ange postnummer för att se erbjudanden',
+      enterPostalButton: 'Ange postnummer',
+      searchPlaceholder: 'Sök restauranger…',
+      showFilters:       'Visa filter',
+      hideFilters:       'Dölj filter',
+      sortOptions: {
+        relevance: 'Relevans',
+        fastest:   'Snabbast leverans',
+        rating:    'Högsta betyg',
+      },
+      menu: {
+        languageLabel: 'Språk',
+        contact:       'Kontakta oss',
+        about:         'Om',
+      },
+      filterBar: {
+        vendorLabel:       'Leverantör:',
+        cuisineLabel:      'Mattyp:',
+        dealTypeLabel:     'Erbjudandekategori:',
+        minRatingLabel:    'Betyg:',
+        anyOption:         'Alla',
+        dealTypeOptions: {                     // ← NEW
+          'Percentage off':    'Procentrabatt',
+          'Fixed-amount off':  'Fast rabatt',
+          'Other':              'Övrigt',
+        }
+      }
+    }
+  };
+  const t = translations[language];
+
   function categorizeDealType(text) {
     if (!text) return 'Other';
-    const t = text.toLowerCase();
-    if (t.includes('%'))         return 'Percentage off';
-    if (t.match(/\d+\s?kr/))     return 'Fixed-amount off';
+    const lower = text.toLowerCase();
+    if (lower.includes('%'))     return 'Percentage off';
+    if (lower.match(/\d+\s?kr/)) return 'Fixed-amount off';
     return 'Other';
   }
-
-  // static order of buckets we want to expose
   const allBuckets = ['Percentage off','Fixed-amount off','Other'];
 
-  // derive unique filter options
   const services = ['foodora','wolt','uber_eats'];
   const cuisines = useMemo(
     () => Array.from(new Set(deals.map(d => d.cuisine).filter(Boolean))),
     [deals]
   );
   const dealCategories = useMemo(() => {
-    const seen = new Set();
-    deals.forEach(d => seen.add(categorizeDealType(d.deal_type)));
-    // only expose the three buckets we care about, in desired order
+    const seen = new Set(deals.map(d => categorizeDealType(d.deal_type)));
     return allBuckets.filter(cat => seen.has(cat));
   }, [deals]);
 
-  // ── apply filters ─────────
   const filtered = deals
-    .filter(d => !postal || d.area_id === postal)
-    .filter(d => !filters.service.length   || filters.service.includes(d.service))
-    .filter(d => !filters.cuisine.length   || filters.cuisine.includes(d.cuisine))
-    .filter(d => !filters.dealCategory.length
-      || filters.dealCategory.includes(categorizeDealType(d.deal_type))
+    .filter(d => d.area_id === postal)
+    .filter(d =>
+      !searchTerm ||
+      d.name.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .filter(d =>
+      !filters.service.length || filters.service.includes(d.service)
+    )
+    .filter(d =>
+      !filters.cuisine.length || filters.cuisine.includes(d.cuisine)
+    )
+    .filter(d =>
+      !filters.dealCategory.length ||
+      filters.dealCategory.includes(categorizeDealType(d.deal_type))
     )
     .filter(d => {
       if (filters.rating == null) return true;
@@ -61,80 +128,171 @@ export default function App() {
       return !isNaN(r) && r >= filters.rating;
     });
 
-  // helper to parse delivery time
   const parseDelivery = d => {
     const m = d.delivery_time && d.delivery_time.match(/(\d+)/);
     return m ? parseInt(m[1], 10) : Infinity;
   };
 
-  // ── sort ─────────
   const sorted = useMemo(() => {
     const arr = [...filtered];
     if (sortBy === 'fastest') {
-      arr.sort((a, b) => parseDelivery(a) - parseDelivery(b));
+      arr.sort((a,b) => parseDelivery(a) - parseDelivery(b));
     } else if (sortBy === 'rating') {
-      arr.sort((a, b) => (parseFloat(b.rating) || 0) - (parseFloat(a.rating) || 0));
+      arr.sort((a,b) =>
+        (parseFloat(b.rating)||0) - (parseFloat(a.rating)||0)
+      );
     }
     return arr;
   }, [filtered, sortBy]);
 
   return (
-    <div className="mx-auto px-4 py-6 max-w-screen-md">
-      <h1 className="text-2xl sm:text-3xl font-bold mb-4">DealCrawler</h1>
-
-      {/* Postal code input */}
-      <div className="mb-4">
-        <input
-          type="text"
-          placeholder="Enter postal code"
-          value={postal}
-          onChange={e => setPostal(e.target.value)}
-          className="border p-2 text-sm rounded w-full sm:w-1/3"
-        />
-      </div>
-
-      {/* Filters toggle + Sort dropdown */}
-      <div className="flex flex-wrap items-center justify-between mb-4 gap-4">
-        <button
-          type="button"
-          onClick={() => setShowFilters(f => !f)}
-          className="filter-toggle"
-        >
-          {showFilters ? 'Hide' : 'Filters'}
-        </button>
-        <div className="flex items-center">
-          <label className="filter-label mr-2">Sort by:</label>
-          <select
-            className="filter-select"
-            value={sortBy}
-            onChange={e => setSortBy(e.target.value)}
-          >
-            <option value="">None</option>
-            <option value="fastest">Fastest Delivery</option>
-            <option value="rating">Highest Rating</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Collapsible FilterBar */}
-      {showFilters && (
-        <div className="mb-6">
-          <FilterBar
-            services={services}
-            cuisines={cuisines}
-            dealCategories={dealCategories}
-            filters={filters}
-            setFilters={setFilters}
+    <div className="app-container">
+      {/* HEADER */}
+      <header className="app-header">
+        <div className="header-left">
+          <input
+            ref={postalInputRef}
+            type="text"
+            placeholder={t.postalPlaceholder}
+            value={postal}
+            onChange={e => setPostal(e.target.value)}
+            className="postal-input"
           />
         </div>
+        <div className="header-center">
+          <h1 className="site-title">{t.siteTitle}</h1>
+        </div>
+        <div className="header-right">
+          <button
+            className="hamburger-menu"
+            aria-label="Menu"
+            onClick={() => setMenuOpen(true)}
+          >
+            <span/><span/><span/>
+          </button>
+        </div>
+      </header>
+
+      {/* SIDE MENU */}
+      {menuOpen && (
+        <>
+          <div
+            className="side-menu-backdrop"
+            onClick={() => setMenuOpen(false)}
+          />
+          <nav className="side-menu open">
+            <button
+              className="side-menu-close"
+              aria-label="Close menu"
+              onClick={() => setMenuOpen(false)}
+            >
+              ×
+            </button>
+            <ul className="side-menu-list">
+              <li className="side-menu-language">
+                <label htmlFor="language-select">
+                  {t.menu.languageLabel}
+                </label>
+                <select
+                  id="language-select"
+                  value={language}
+                  onChange={e => setLanguage(e.target.value)}
+                >
+                  <option value="en">English</option>
+                  <option value="sv">Svenska</option>
+                </select>
+              </li>
+              <li>
+                <a href="mailto:support@dealcrawler.com">
+                  {t.menu.contact}
+                </a>
+              </li>
+              <li>
+                <a href="/about">{t.menu.about}</a>
+              </li>
+            </ul>
+          </nav>
+        </>
       )}
 
-      {/* Deals grid */}
-      <div className="deal-grid">
-        {sorted.map(deal => (
-          <DealCard key={deal.link} deal={deal} />
-        ))}
-      </div>
+      {/* MAIN */}
+      <main className="app-main">
+        {!postal ? (
+          <div className="empty-state">
+            {t.emptyEnter}
+            <button
+              className="enter-postal-button"
+              onClick={() => postalInputRef.current?.focus()}
+            >
+              {t.enterPostalButton}
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="search-wrapper">
+              <input
+                type="text"
+                placeholder={t.searchPlaceholder}
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="search-input"
+              />
+            </div>
+
+            <div className="controls-row">
+              <button
+                onClick={() => setShowFilters(f => !f)}
+                className="filter-toggle"
+              >
+                {showFilters ? t.hideFilters : t.showFilters}
+              </button>
+              <div className="sort-wrapper">
+                <label className="filter-label">{t.sortByLabel}</label>
+                <select
+                  className="filter-select"
+                  value={sortBy}
+                  onChange={e => setSortBy(e.target.value)}
+                >
+                  <option value="">
+                    {t.sortOptions.relevance}
+                  </option>
+                  <option value="fastest">
+                    {t.sortOptions.fastest}
+                  </option>
+                  <option value="rating">
+                    {t.sortOptions.rating}
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            {showFilters && (
+              <div className="filter-panel mb-6">
+                <FilterBar
+                  services={services}
+                  cuisines={cuisines}
+                  dealCategories={dealCategories}
+                  filters={filters}
+                  setFilters={setFilters}
+                  translations={t.filterBar}
+                />
+              </div>
+            )}
+
+            {sorted.length === 0 ? (
+              <div className="empty-state">
+                No deals found for postal code <strong>{postal}</strong>.
+              </div>
+            ) : (
+              <div className="deal-grid">
+                {sorted.map(deal => (
+                  <DealCard key={deal.link} deal={deal} />
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </main>
     </div>
   );
 }

@@ -1,5 +1,3 @@
-// src/components/FilterBar.jsx
-
 import React from 'react';
 
 export default function FilterBar({
@@ -7,13 +5,26 @@ export default function FilterBar({
   cuisines,
   dealCategories,
   filters,
-  setFilters
+  setFilters,
+  translations
 }) {
+  const t = translations;
+
+  const handleCheckbox = (field, value, checked) => {
+    setFilters(prev => {
+      const list = prev[field];
+      return {
+        ...prev,
+        [field]: checked ? [...list, value] : list.filter(x => x !== value)
+      };
+    });
+  };
+
   return (
     <div className="filter-bar">
-      {/* Vendor filter */}
+      {/* Vendor */}
       <div className="filter-group">
-        <label className="filter-label">Delivery Service:</label>
+        <label className="filter-label">{t.vendorLabel}</label>
         <div className="filter-options">
           {services.map(svc => (
             <label key={svc} className="filter-option">
@@ -21,15 +32,7 @@ export default function FilterBar({
                 type="checkbox"
                 value={svc}
                 checked={filters.service.includes(svc)}
-                onChange={e => {
-                  const val = e.target.value;
-                  setFilters(f => ({
-                    ...f,
-                    service: f.service.includes(val)
-                      ? f.service.filter(x => x !== val)
-                      : [...f.service, val]
-                  }));
-                }}
+                onChange={e => handleCheckbox('service', svc, e.target.checked)}
               />
               <span className="capitalize">{svc.replace('_', ' ')}</span>
             </label>
@@ -37,9 +40,9 @@ export default function FilterBar({
         </div>
       </div>
 
-      {/* Cuisine filter */}
+      {/* Cuisine */}
       <div className="filter-group">
-        <label className="filter-label">Cuisine:</label>
+        <label className="filter-label">{t.cuisineLabel}</label>
         <div className="filter-options">
           {cuisines.map(cui => (
             <label key={cui} className="filter-option">
@@ -47,15 +50,7 @@ export default function FilterBar({
                 type="checkbox"
                 value={cui}
                 checked={filters.cuisine.includes(cui)}
-                onChange={e => {
-                  const val = e.target.value;
-                  setFilters(f => ({
-                    ...f,
-                    cuisine: f.cuisine.includes(val)
-                      ? f.cuisine.filter(x => x !== val)
-                      : [...f.cuisine, val]
-                  }));
-                }}
+                onChange={e => handleCheckbox('cuisine', cui, e.target.checked)}
               />
               <span>{cui}</span>
             </label>
@@ -63,9 +58,9 @@ export default function FilterBar({
         </div>
       </div>
 
-      {/* Deal Type (smart buckets) filter */}
+      {/* Deal Type */}
       <div className="filter-group">
-        <label className="filter-label">Deal Type:</label>
+        <label className="filter-label">{t.dealTypeLabel}</label>
         <div className="filter-options">
           {dealCategories.map(cat => (
             <label key={cat} className="filter-option">
@@ -73,36 +68,30 @@ export default function FilterBar({
                 type="checkbox"
                 value={cat}
                 checked={filters.dealCategory.includes(cat)}
-                onChange={e => {
-                  const val = e.target.value;
-                  setFilters(f => ({
-                    ...f,
-                    dealCategory: f.dealCategory.includes(val)
-                      ? f.dealCategory.filter(x => x !== val)
-                      : [...f.dealCategory, val]
-                  }));
-                }}
+                onChange={e =>
+                  handleCheckbox('dealCategory', cat, e.target.checked)
+                }
               />
-              <span>{cat}</span>
+              <span>{t.dealTypeOptions[cat] || cat}</span>
             </label>
           ))}
         </div>
       </div>
 
-      {/* Rating filter */}
+      {/* Min Rating */}
       <div className="filter-group">
-        <label className="filter-label">Rating:</label>
+        <label className="filter-label">{t.minRatingLabel}</label>
         <select
           className="filter-select"
           value={filters.rating || ''}
           onChange={e =>
-            setFilters(f => ({
-              ...f,
+            setFilters(prev => ({
+              ...prev,
               rating: e.target.value ? parseFloat(e.target.value) : null
             }))
           }
         >
-          <option value="">Any</option>
+          <option value="">{t.anyOption}</option>
           {[4, 3, 2, 1].map(r => (
             <option key={r} value={r}>
               {r}+
