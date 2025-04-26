@@ -65,7 +65,7 @@ for area in areas:
         name = deal.get("title") or deal.get("venue", {}).get("name", "")
         link = deal.get("link", {}).get("target", "")
         image = deal.get("image", {}).get("url", "")
-        
+
         # Combine promotions if available.
         promotions = deal.get("venue", {}).get("promotions", [])
         if promotions:
@@ -73,27 +73,46 @@ for area in areas:
             deal_type = ", ".join(promotion_texts)
         else:
             deal_type = ""
-        
+
         # Get rating information.
         rating_obj = deal.get("venue", {}).get("rating", {})
         rating = str(rating_obj.get("rating", ""))
         rating_count = f"({rating_obj.get('volume', '')})" if rating_obj.get("volume") else ""
+
         # Extract delivery time info.
         delivery_time = deal.get("venue", {}).get("estimate_box", {}).get("title", "")
-        
-        # Include the area id (or name in this example) in the deal record.
+
+        # ————————— NEW: extract cuisine type —————————
+        # 1) Try the deal-level filtering "primary" values
+        cuisine = ""
+        filtering = deal.get("filtering", {}).get("filters", [])
+        for f in filtering:
+            if f.get("id") == "primary":
+                vals = f.get("values", [])
+                if vals:
+                    cuisine = vals[0]
+                break
+        # 2) Fallback to venue tags
+        if not cuisine:
+            tags = deal.get("venue", {}).get("tags", [])
+            if isinstance(tags, list) and tags:
+                cuisine = tags[0]
+        # ————————————————————————————————
+
+        # Build the deal record
         deal_item = {
-            "area_id": area["name"],
-            "name": name,
-            "link": link,
-            "image": image,
-            "deal_type": deal_type,
-            "rating": rating,
+            "area_id":      area["name"],
+            "name":         name,
+            "link":         link,
+            "image":        image,
+            "deal_type":    deal_type,
+            "rating":       rating,
             "rating_count": rating_count,
-            "delivery_time": delivery_time
+            "delivery_time":delivery_time,
+            "cuisine":      cuisine,  # newly added field
         }
         all_deals.append(deal_item)
-    
+
     # Pause to reduce request rate.
     time.sleep(1)
 

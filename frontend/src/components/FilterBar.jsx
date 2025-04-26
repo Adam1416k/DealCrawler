@@ -15,7 +15,9 @@ export default function FilterBar({
       const list = prev[field];
       return {
         ...prev,
-        [field]: checked ? [...list, value] : list.filter(x => x !== value)
+        [field]: checked
+          ? [...list, value]
+          : list.filter(x => x !== value)
       };
     });
   };

@@ -1,13 +1,213 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import FilterBar from './components/FilterBar';
-import DealCard from './components/DealCard';
+import DealCard  from './components/DealCard';
+
+// ─── Constants ────────────────────────────────────
+
+// 1) the cuisines we want to expose
+const ALLOWED_CUISINES = [
+  'Sushi',
+  'Thai',
+  'Pizza',
+  'Burgers',
+  'Indian',
+  'Asian',
+  'Italian',
+  'Kebab'
+];
+
+// 2) collapse raw values → one of the above (including Swedish variants)
+const CUISINE_SYNONYMS = {
+  // Burgers
+  burgers:    'Burgers',   Burgers:    'Burgers',
+  Burger:     'Burgers',
+  burgare:    'Burgers',   Burgare:    'Burgers',
+  hamburgare: 'Burgers',   Hamburgare: 'Burgers',
+
+  // Pizza
+  pizza:      'Pizza',     Pizza:      'Pizza',
+  pizzeria:   'Pizza',     Pizzeria:   'Pizza',
+
+  // Italian
+  italian:    'Italian',   Italian:    'Italian',
+  italienskt: 'Italian',   Italienskt: 'Italian',
+  italiensk:  'Italian',   Italiensk:  'Italian',
+  pasta:      'Italian',   Pasta:      'Italian',
+
+  // Sushi
+  sushi:      'Sushi',     Sushi:      'Sushi',
+  sashimi:    'Sushi',
+
+  // Thai
+  thai:       'Thai',      Thai:       'Thai',
+  thailändskt:'Thai',      Thailändskt:'Thai',
+  thailändsk: 'Thai',      Thailändsk: 'Thai',
+
+  // Indian
+  indian:     'Indian',    Indian:     'Indian',
+  indiskt:    'Indian',    Indiskt:    'Indian',
+  indisk:     'Indian',    Indisk:     'Indian',
+  curry:      'Indian',    Curry:      'Indian',
+  'soup-curry':'Indian',
+
+  // Asian (catch-all)
+  asian:      'Asian',     Asian:      'Asian',
+  japanese:   'Asian',     Japanese:   'Asian',
+  japanskt:   'Asian',     Japanskt:   'Asian',
+  japansk:    'Asian',     Japansk:    'Asian',
+  chinese:    'Asian',     Chinese:    'Asian',
+  kinesiskt:  'Asian',     Kinesiskt:  'Asian',
+  kinamat:    'Asian',
+  vietnamese: 'Asian',     Vietnamese: 'Asian',
+  vietnamesiskt:'Asian',   Vietnamesiskt:'Asian',
+  korean:     'Asian',     Korean:     'Asian',
+  koreanskt:  'Asian',     Koreanskt:  'Asian',
+  ramen:      'Asian',     Ramen:      'Asian',
+  bento:      'Asian',     Bento:      'Asian',
+  yakiniku:   'Asian',     Yakiniku:   'Asian',
+  yakitori:   'Asian',     Yakitori:   'Asian',
+  'central-asian':'Asian',
+
+  // Kebab (new)
+  kebab:      'Kebab',     Kebab:      'Kebab',
+
+
+  // everything else → Other
+  american:    'Burgers',    American:    'Burgers',
+  amerikanskt: 'Burgers',    Amerikanskt: 'Burgers',
+  mexican:     'Other',    Mexican:     'Other',
+  mexikanskt:  'Other',    Mexikanskt:  'Other',
+  mediterranean:'Kebab',   Mediterranean:'Kebab',
+  european:    'Other',    European:    'Other',
+  europeiskt:  'Other',    Europeiskt:  'Other',
+  vegetarian:  'Other',    Vegetarian:  'Other',
+  vegan:       'Other',    Vegan:       'Other',
+  'gluten-free':'Other',   glutenfree:  'Other',
+  healthy:     'Other',    Healthy:     'Other',
+  dessert:     'Other',    Dessert:     'Other',
+  ice_cream:   'Other',    'Ice cream':'Other',
+  snacks:      'Other',    Snacks:      'Other',
+  salad:       'Other',    Salad:       'Other',
+  sallader:    'Other',    Sallader:    'Other',
+  bowl:        'Other',    Bowl:        'Other',
+  bowls:       'Other',
+  sandwich:    'Other',    Sandwich:    'Other',
+  smörgåsar:   'Other',    Smörgåsar:   'Other',
+  wraps:       'Kebab',    Wraps:       'Kebab',
+  falafel:     'Kebab',    Falafel:     'Kebab',
+  shawarma:    'Kebab',
+  'Poke Bowl': 'Other',
+  'pommes frites':'Other',
+  fish:        'Other',    Fish:        'Other',
+  chicken:     'Other',    Chicken:     'Other',
+  steak:       'Other',    Steak:       'Other',
+  wings:       'Other',    Wings:       'Other',
+  drycker:     'Other',    Drycker:     'Other',
+  kaffe:       'Other',    Kaffe:       'Other',
+  bakery:      'Other',    Bakery:      'Other',
+  taco:        'Other',    tacos:       'Other',
+  Doner:       'Kebab',    doner:       'Kebab',
+  nachos:      'Other',
+  'kids-meals':'Other',
+  brunch:      'Other',
+  cafeteria:   'Other',
+  Other:       'Other'
+};
+
+// ─── Translations ─────────────────────────────────
+const translations = {
+  en: {
+    siteTitle:         'DealCrawler',
+    postalPlaceholder: 'Postal code',
+    emptyEnter:        'Enter postal code to see deals',
+    enterPostalButton: 'Enter postal code',
+    searchPlaceholder: 'Search restaurants…',
+    showFilters:       'Show Filters',
+    hideFilters:       'Hide Filters',
+    sortOptions: {
+      relevance: 'Relevance',
+      fastest:   'Fastest Delivery',
+      rating:    'Highest Rating',
+    },
+    menu: {
+      languageLabel: 'Language',
+      contact:       'Contact Us',
+      about:         'About',
+    },
+    filterBar: {
+      vendorLabel:       'Vendor:',
+      cuisineLabel:      'Cuisine:',
+      dealTypeLabel:     'Deal Type:',
+      minRatingLabel:    'Rating:',
+      anyOption:         'Any',
+      dealTypeOptions: {
+        'Percentage off':   'Percentage off',
+        'Fixed-amount off': 'Fixed-amount off',
+        'Other':             'Other',
+      },
+      cuisineOptions: {
+        Sushi:   'Sushi',
+        Thai:    'Thai',
+        Pizza:   'Pizza',
+        Burgers: 'Burgers',
+        Indian:  'Indian',
+        Asian:   'Asian',
+        Italian: 'Italian',
+        Kebab:   'Kebab',
+        Other:   'Other',
+      }
+    }
+  },
+  sv: {
+    siteTitle:         'DealCrawler',
+    postalPlaceholder: 'Postnummer',
+    emptyEnter:        'Ange postnummer för att se erbjudanden',
+    enterPostalButton: 'Ange postnummer',
+    searchPlaceholder: 'Sök restauranger…',
+    showFilters:       'Visa filter',
+    hideFilters:       'Dölj filter',
+    sortOptions: {
+      relevance: 'Relevans',
+      fastest:   'Snabbast leverans',
+      rating:    'Högsta betyg',
+    },
+    menu: {
+      languageLabel: 'Språk',
+      contact:       'Kontakta oss',
+      about:         'Om',
+    },
+    filterBar: {
+      vendorLabel:       'Leverantör:',
+      cuisineLabel:      'Mattyp:',
+      dealTypeLabel:     'Erbjudandekategori:',
+      minRatingLabel:    'Betyg:',
+      anyOption:         'Alla',
+      dealTypeOptions: {
+        'Percentage off':   'Procentrabatt',
+        'Fixed-amount off': 'Fast rabatt',
+        'Other':             'Övrigt',
+      },
+      cuisineOptions: {
+        Sushi:   'Sushi',
+        Thai:    'Thai',
+        Pizza:   'Pizza',
+        Burgers: 'Burgare',
+        Indian:  'Indisk',
+        Asian:   'Asiatisk',
+        Italian: 'Italiensk',
+        Kebab:   'Kebab',
+        Other:   'Övrigt',
+      }
+    }
+  }
+};
 
 export default function App() {
   const [deals, setDeals] = useState([]);
   const [postal, setPostal] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
-    service: [], cuisine: [], dealCategory: [], rating: null,
+    service: [], cuisine: [], dealCategory: [], rating: null
   });
   const [sortBy, setSortBy] = useState('');
   const [showFilters, setShowFilters] = useState(false);
@@ -15,83 +215,123 @@ export default function App() {
   const [language, setLanguage] = useState('sv');
   const postalInputRef = useRef();
 
-  useEffect(() => {
-    fetch('/all_deals.json')
-      .then(res => res.json())
-      .then(data => setDeals(data));
-  }, []);
-
   const translations = {
     en: {
-      siteTitle:         'DealCrawler',
+      siteTitle: 'DealCrawler',
       postalPlaceholder: 'Postal code',
-      emptyEnter:        'Enter postal code to see deals',
+      emptyEnter: 'Enter postal code to see deals',
       enterPostalButton: 'Enter postal code',
       searchPlaceholder: 'Search restaurants…',
-      showFilters:       'Show Filters',
-      hideFilters:       'Hide Filters',
+      showFilters: 'Show Filters',
+      hideFilters: 'Hide Filters',
       sortOptions: {
         relevance: 'Relevance',
-        fastest:   'Fastest Delivery',
-        rating:    'Highest Rating',
+        fastest: 'Fastest Delivery',
+        rating: 'Highest Rating'
       },
       menu: {
         languageLabel: 'Language',
-        contact:       'Contact Us',
-        about:         'About',
+        contact: 'Contact Us',
+        about: 'About'
       },
       filterBar: {
-        vendorLabel:       'Vendor:',
-        cuisineLabel:      'Cuisine:',
-        dealTypeLabel:     'Deal Type:',
-        minRatingLabel:    'Rating:',
-        anyOption:         'Any',
-        dealTypeOptions: {                     // ← NEW
-          'Percentage off':    'Percentage off',
-          'Fixed-amount off':  'Fixed-amount off',
-          'Other':              'Other',
+        vendorLabel: 'Vendor:',
+        cuisineLabel: 'Cuisine:',
+        dealTypeLabel: 'Deal Type:',
+        minRatingLabel: 'Rating:',
+        anyOption: 'Any',
+        dealTypeOptions: {
+          'Percentage off': 'Percentage off',
+          'Fixed-amount off': 'Fixed-amount off',
+          Other: 'Other'
+        },
+        cuisineOptions: {
+          Sushi: 'Sushi',
+          Thai: 'Thai',
+          Pizza: 'Pizza',
+          Burgers: 'Burgers',
+          Indian: 'Indian',
+          Asian: 'Asian',
+          Italian: 'Italian',
+          Kebab: 'Kebab',
+          Other: 'Other'
         }
       }
     },
     sv: {
-      siteTitle:         'DealCrawler',
+      siteTitle: 'DealCrawler',
       postalPlaceholder: 'Postnummer',
-      emptyEnter:        'Ange postnummer för att se erbjudanden',
+      emptyEnter: 'Ange postnummer för att se erbjudanden',
       enterPostalButton: 'Ange postnummer',
       searchPlaceholder: 'Sök restauranger…',
-      showFilters:       'Visa filter',
-      hideFilters:       'Dölj filter',
+      showFilters: 'Visa filter',
+      hideFilters: 'Dölj filter',
       sortOptions: {
         relevance: 'Relevans',
-        fastest:   'Snabbast leverans',
-        rating:    'Högsta betyg',
+        fastest: 'Snabbast leverans',
+        rating: 'Högsta betyg'
       },
       menu: {
         languageLabel: 'Språk',
-        contact:       'Kontakta oss',
-        about:         'Om',
+        contact: 'Kontakta oss',
+        about: 'Om'
       },
       filterBar: {
-        vendorLabel:       'Leverantör:',
-        cuisineLabel:      'Mattyp:',
-        dealTypeLabel:     'Erbjudandekategori:',
-        minRatingLabel:    'Betyg:',
-        anyOption:         'Alla',
-        dealTypeOptions: {                     // ← NEW
-          'Percentage off':    'Procentrabatt',
-          'Fixed-amount off':  'Fast rabatt',
-          'Other':              'Övrigt',
+        vendorLabel: 'Leverantör:',
+        cuisineLabel: 'Mattyp:',
+        dealTypeLabel: 'Erbjudandekategori:',
+        minRatingLabel: 'Betyg:',
+        anyOption: 'Alla',
+        dealTypeOptions: {
+          'Percentage off': 'Procentrabatt',
+          'Fixed-amount off': 'Fast rabatt',
+          Other: 'Övrigt'
+        },
+        cuisineOptions: {
+          Sushi: 'Sushi',
+          Thai: 'Thai',
+          Pizza: 'Pizza',
+          Burgers: 'Burgare',
+          Indian: 'Indisk',
+          Asian: 'Asiatisk',
+          Italian: 'Italiensk',
+          Kebab: 'Kebab',
+          Other: 'Övrigt'
         }
       }
     }
   };
   const t = translations[language];
 
+  // Normalize and backfill cuisines, then set state
+  useEffect(() => {
+    fetch('/all_deals.json')
+      .then(res => res.json())
+      .then(raw => {
+        const nameCuisine = {};
+        raw.forEach(d => {
+          if (d.cuisine) {
+            const mapped = CUISINE_SYNONYMS[d.cuisine] || CUISINE_SYNONYMS.default;
+            nameCuisine[d.name] = mapped;
+          }
+        });
+        const filled = raw.map(d => {
+          let cuisine = d.cuisine
+            ? (CUISINE_SYNONYMS[d.cuisine] || CUISINE_SYNONYMS.default)
+            : nameCuisine[d.name] || 'Other';
+          if (!ALLOWED_CUISINES.includes(cuisine)) cuisine = 'Other';
+          return { ...d, cuisine };
+        });
+        setDeals(filled);
+      });
+  }, []);
+
+  // categorize deal_type into buckets
   function categorizeDealType(text) {
     if (!text) return 'Other';
-    const lower = text.toLowerCase();
-    if (lower.includes('%'))     return 'Percentage off';
-    if (lower.match(/\d+\s?kr/)) return 'Fixed-amount off';
+    const t = text.toLowerCase();
+    if (t.includes('%')) return 'Percentage off';
+    if (/\d+\s?kr/.test(t)) return 'Fixed-amount off';
     return 'Other';
   }
   const allBuckets = ['Percentage off','Fixed-amount off','Other'];
@@ -106,41 +346,32 @@ export default function App() {
     return allBuckets.filter(cat => seen.has(cat));
   }, [deals]);
 
+  // filtering pipeline
   const filtered = deals
     .filter(d => d.area_id === postal)
-    .filter(d =>
-      !searchTerm ||
-      d.name.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .filter(d =>
-      !filters.service.length || filters.service.includes(d.service)
-    )
-    .filter(d =>
-      !filters.cuisine.length || filters.cuisine.includes(d.cuisine)
-    )
-    .filter(d =>
-      !filters.dealCategory.length ||
-      filters.dealCategory.includes(categorizeDealType(d.deal_type))
-    )
+    .filter(d => !searchTerm || d.name.toLowerCase().includes(searchTerm.toLowerCase()))
+    .filter(d => !filters.service.length || filters.service.includes(d.service))
+    .filter(d => !filters.cuisine.length || filters.cuisine.includes(d.cuisine))
+    .filter(d => !filters.dealCategory.length || filters.dealCategory.includes(categorizeDealType(d.deal_type)))
     .filter(d => {
       if (filters.rating == null) return true;
       const r = parseFloat(d.rating);
       return !isNaN(r) && r >= filters.rating;
     });
 
+  // helper to parse delivery_time
   const parseDelivery = d => {
     const m = d.delivery_time && d.delivery_time.match(/(\d+)/);
     return m ? parseInt(m[1], 10) : Infinity;
   };
 
+  // sorting
   const sorted = useMemo(() => {
     const arr = [...filtered];
     if (sortBy === 'fastest') {
       arr.sort((a,b) => parseDelivery(a) - parseDelivery(b));
     } else if (sortBy === 'rating') {
-      arr.sort((a,b) =>
-        (parseFloat(b.rating)||0) - (parseFloat(a.rating)||0)
-      );
+      arr.sort((a,b) => (parseFloat(b.rating)||0) - (parseFloat(a.rating)||0));
     }
     return arr;
   }, [filtered, sortBy]);
@@ -176,23 +407,12 @@ export default function App() {
       {/* SIDE MENU */}
       {menuOpen && (
         <>
-          <div
-            className="side-menu-backdrop"
-            onClick={() => setMenuOpen(false)}
-          />
+          <div className="side-menu-backdrop" onClick={() => setMenuOpen(false)} />
           <nav className="side-menu open">
-            <button
-              className="side-menu-close"
-              aria-label="Close menu"
-              onClick={() => setMenuOpen(false)}
-            >
-              ×
-            </button>
+            <button className="side-menu-close" onClick={() => setMenuOpen(false)}>×</button>
             <ul className="side-menu-list">
               <li className="side-menu-language">
-                <label htmlFor="language-select">
-                  {t.menu.languageLabel}
-                </label>
+                <label htmlFor="language-select">{t.menu.languageLabel}</label>
                 <select
                   id="language-select"
                   value={language}
@@ -202,14 +422,8 @@ export default function App() {
                   <option value="sv">Svenska</option>
                 </select>
               </li>
-              <li>
-                <a href="mailto:support@dealcrawler.com">
-                  {t.menu.contact}
-                </a>
-              </li>
-              <li>
-                <a href="/about">{t.menu.about}</a>
-              </li>
+              <li><a href="mailto:support@dealcrawler.com">{t.menu.contact}</a></li>
+              <li><a href="/about">{t.menu.about}</a></li>
             </ul>
           </nav>
         </>
@@ -229,6 +443,7 @@ export default function App() {
           </div>
         ) : (
           <>
+            {/* SEARCH BAR */}
             <div className="search-wrapper">
               <input
                 type="text"
@@ -239,6 +454,7 @@ export default function App() {
               />
             </div>
 
+            {/* FILTER & SORT */}
             <div className="controls-row">
               <button
                 onClick={() => setShowFilters(f => !f)}
@@ -253,15 +469,9 @@ export default function App() {
                   value={sortBy}
                   onChange={e => setSortBy(e.target.value)}
                 >
-                  <option value="">
-                    {t.sortOptions.relevance}
-                  </option>
-                  <option value="fastest">
-                    {t.sortOptions.fastest}
-                  </option>
-                  <option value="rating">
-                    {t.sortOptions.rating}
-                  </option>
+                  <option value="">{t.sortOptions.relevance}</option>
+                  <option value="fastest">{t.sortOptions.fastest}</option>
+                  <option value="rating">{t.sortOptions.rating}</option>
                 </select>
               </div>
             </div>
@@ -281,7 +491,9 @@ export default function App() {
 
             {sorted.length === 0 ? (
               <div className="empty-state">
-                No deals found for postal code <strong>{postal}</strong>.
+                {language === 'sv'
+                  ? `Inga erbjudanden för postnummer ${postal}.`
+                  : `No deals found for postal code ${postal}.`}
               </div>
             ) : (
               <div className="deal-grid">

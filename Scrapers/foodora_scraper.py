@@ -11,7 +11,7 @@ areas = [
     # … add the rest of your ~40 postal codes here …
 ]
 
-# ————————————— GraphQL with tags —————————————
+# ————————————— GraphQL with only primary cuisine —————————————
 GRAPHQL = """
 query fetchDeals($input: RLPInput!) {
   rlp(params: $input) {
@@ -28,6 +28,11 @@ query fetchDeals($input: RLPInput!) {
           }
           hero_listing_image
           url_key
+          characteristics {
+            primary_cuisine {
+              name
+            }
+          }
           tags {
             code
             text
@@ -39,7 +44,7 @@ query fetchDeals($input: RLPInput!) {
 }
 """
 
-# ————————————— Step 1: warm up session —————————————
+# ————————————— Step 1: warm up session —————————————
 session = requests.Session()
 session.headers.update({
     "User-Agent": ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
@@ -47,11 +52,10 @@ session.headers.update({
     "Accept": "application/json, text/plain, */*",
     "Accept-Language": "sv-SE,sv;q=0.9,en-US;q=0.8,en;q=0.7",
 })
-
-# fetch the public deals page to get fresh cookies
+# get fresh cookies
 session.get("https://www.foodora.se/contents/deals", timeout=10).raise_for_status()
 
-# ————————————— Step 2: extract & reuse cookies as headers —————————————
+# ————————————— Step 2: extract & reuse cookies as headers —————————————
 dps     = session.cookies.get("dps-session-id")
 perseus = session.cookies.get("perseus-session-id")
 cf_bm   = session.cookies.get("__cf_bm", domain="op.fd-api.com")
@@ -66,13 +70,13 @@ session.headers.update({
     "Referer":            "https://www.foodora.se/"
 })
 
-# ensure the CF cookies go to the GraphQL host
+# ensure CF cookies are sent to the API host
 if cf_bm:
     session.cookies.set("__cf_bm", cf_bm, domain="op.fd-api.com", path="/")
 if pxhd:
     session.cookies.set("_pxhd", pxhd, domain="op.fd-api.com", path="/")
 
-# ————————————— Step 3: scrape + filter + reformat —————————————
+# ————————————— Step 3: scrape + filter + reformat —————————————
 all_deals = []
 
 for area in areas:
@@ -137,11 +141,11 @@ for area in areas:
                  .get("organic_listing", {})
                  .get("views", []))
     if not views:
-        print("No views returned")
+        print("  No views returned")
         continue
 
     items = views[0].get("items", [])
-    print(f"{len(items)} total vendors")
+    print(f"  {len(items)} total vendors")
 
     for it in items:
         # pick only the "DEAL" tag
@@ -149,6 +153,11 @@ for area in areas:
         if not deal_tags:
             continue
         deal_text = deal_tags[0].get("text", "").strip()
+
+        # extract primary cuisine
+        primary = it.get("characteristics", {}) \
+                   .get("primary_cuisine", {}) \
+                   .get("name", "")
 
         # safe delivery time
         dr = it.get("delivery_duration_range") or {}
@@ -160,25 +169,27 @@ for area in areas:
         cnt = it.get("review_number") or 0
         rating_count = f"({cnt:,})" if cnt else ""
 
+        # extract image code for URL
         image_url = it.get("hero_listing_image", "")
         code_match = re.search(r'/([^/]+?)-listing\.jpg', image_url)
         code = code_match.group(1) if code_match else ""
 
         all_deals.append({
-            "area_id":      area["name"],
-            "name":         it.get("name", ""),
-            "link":         f"https://www.foodora.se/restaurant/{code}/{it.get('url_key','')}",
-            "image":        image_url,
-            "deal_type":    deal_text,
-            "rating":       str(it.get("rating", "")),
-            "rating_count": rating_count,
-            "delivery_time": delivery
+            "area_id":         area["name"],
+            "name":            it.get("name", ""),
+            "link":            f"https://www.foodora.se/restaurant/{code}/{it.get('url_key','')}",
+            "image":           image_url,
+            "deal_type":       deal_text,
+            "rating":          str(it.get("rating", "")),
+            "rating_count":    rating_count,
+            "delivery_time":   delivery,
+            "cuisine": primary,
         })
 
     # be polite
     time.sleep(1)
 
-# ————————————— Step 4: write to JSON —————————————
+# ————————————— Step 4: write to JSON —————————————
 with open("foodora_deals.json", "w", encoding="utf-8") as f:
     json.dump(all_deals, f, ensure_ascii=False, indent=2)
 
