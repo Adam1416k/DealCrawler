@@ -45,9 +45,6 @@ html, body {
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.12),   /* soft, small ambient shadow */
-    0 1px 2px rgba(0, 0, 0, 0.24);   /* slightly darker core shadow */
   transition:
     box-shadow 250ms ease-in-out,
     transform   250ms ease-in-out;
@@ -79,9 +76,9 @@ html, body {
 }
 
 .card-title {
-  margin: 0.5rem 0;               /* only 4px above & below */
-  font-weight: 700;   
-  font-size: 1rem;             /* bold */
+  margin: 0.7rem 0;               /* only 4px above & below */
+  font-weight: 600;   
+  font-size: 0.9rem;             /* bold */
 
   /* never overlap the badge area */
   max-width: calc(100% - 1rem);    /* reserve ~4rem for the badge */
@@ -149,7 +146,7 @@ html, body {
   /* remove any absolute positioning here */
   position: static;
   display: inline-block;
-  background-color: #db2777;
+  background-color: #fa4b15;
   color: white;
   padding: 0.25rem 0.75rem;
   border-radius: 9999px;
@@ -168,12 +165,12 @@ html, body {
   display: inline-block;
 
   /* everything else as before… */
-  background-color: #374151;
-  color: white;
+  background-color: #ffffff;
+  color: rgb(0, 0, 0);
   padding: 0.25rem 0.75rem;
   border-radius: 9999px;
   font-size: 0.75rem;
-  font-weight: 500;
+  font-weight: 700;
   white-space: nowrap;
   box-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }
@@ -202,14 +199,13 @@ html, body {
 }
 
 .filter-toggle {
-  background-color: #db2777;       /* match your deal‐badge pink */
-  color: #fff;
+  background-color: hsl(14, 100%, 97%);       /* match your deal‐badge pink */
+  color: #fa4b15;
   border: none;
   border-radius: 9999px;           /* full pill */
   padding: 0.5rem 1rem;            /* 8px/16px */
   font-size: 0.875rem;
   font-weight: 600;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
   cursor: pointer;
   transition: 
     background-color 200ms ease, 
@@ -217,13 +213,13 @@ html, body {
     transform 150ms ease;
 }
 .filter-toggle:hover {
-  background-color: #db2777;       /* slightly darker pink */
+  background-color: hsl(14, 100%, 97%);       /* slightly darker pink */
   box-shadow: 0 4px 12px rgba(0,0,0,0.16);
   transform: translateY(-1px);
 }
 .filter-toggle:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(219,39,119,0.4);
+  box-shadow: 0 0 0 3px #fa4a153b;
 }
 
 /* labels ("Service:", "Min Rating:") */
@@ -273,8 +269,8 @@ html, body {
 }
 .filter-select:focus {
   outline: none;
-  border-color: #db2777;           /* fuchsia-600 */
-  box-shadow: 0 0 0 3px rgba(219,39,119,0.3);
+  border-color: #fa4b15;           /* fuchsia-600 */
+  box-shadow: 0 0 0 3px #fa4a1548;
 }
 
 /* ─── EMPTY STATE ───────────────────────── */
@@ -330,10 +326,10 @@ html, body {
 
 .hamburger-menu span {
   display: block;
-  width: 20px;
+  width: 10px;
   height: 2px;
   background: #111827;  /* gray-900 */
-  margin: 3px 0;
+  margin: 1px 0;
   border-radius: 1px;
 }
 
@@ -366,8 +362,8 @@ html, body {
 
 .postal-input:focus {
   outline: none;
-  border-color: #3b82f6;        /* blue-500 */
-  box-shadow: 0 0 0 3px rgba(59,130,246,0.3);
+  border-color: #fa4b15;        /* blue-500 */
+  box-shadow: 0 0 0 3px #fa4a1534;
 }
 
 /* ─── MAIN CONTENT PADDING ───────────────────────── */
@@ -420,8 +416,8 @@ html, body {
 
 .search-input:focus {
   outline: none;
-  border-color: #db2777;  /* fuchsia-600 */
-  box-shadow: 0 0 0 3px rgba(219,39,119,0.3);
+  border-color: #fa4b15;  /* fuchsia-600 */
+  box-shadow: 0 0 0 3px #fa4a1538;
 }
 
 /* ─── FADE-IN ON SCROLL ─────────────────────────── */
@@ -513,21 +509,20 @@ html, body {
   padding: 0.75rem 1.5rem;
   font-size: 1rem;
   font-weight: 600;
-  background-color: #db2777;
+  background-color: #fa4b15;
   color: white;
   border: none;
   border-radius: 0.5rem;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
   cursor: pointer;
   transition: 
     background-color 200ms ease,
     transform 100ms ease;
 }
 .enter-postal-button:hover {
-  background-color: #c21f5b;
+  background-color: #fa4b15;
   transform: translateY(-1px);
 }
 .enter-postal-button:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(219,39,119,0.4);
+  box-shadow: 0 0 0 3px #fa4b15;
 }
