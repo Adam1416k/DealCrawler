@@ -175,104 +175,6 @@ html, body {
   box-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }
 
-/* ─── FILTER BAR STYLES ───────────────────────────────── */
-
-/* container around all filters */
-.filter-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;                   /* space between groups */
-  background: #fff;
-  border: 1px solid #e5e7eb;   /* gray-200 */
-  border-radius: 12px;         /* match cards */
-  padding: 1rem;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-  margin-bottom: 1.5rem;
-  margin-top: 0.5rem;
-}
-
-/* each filter (service or rating) */
-.filter-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
-.filter-toggle {
-  background-color: hsl(14, 100%, 97%);       /* match your deal‐badge pink */
-  color: #fa4b15;
-  border: none;
-  border-radius: 9999px;           /* full pill */
-  padding: 0.5rem 1rem;            /* 8px/16px */
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: 
-    background-color 200ms ease, 
-    box-shadow 200ms ease,
-    transform 150ms ease;
-}
-.filter-toggle:hover {
-  background-color: hsl(14, 100%, 97%);       /* slightly darker pink */
-  box-shadow: 0 4px 12px rgba(0,0,0,0.16);
-  transform: translateY(-1px);
-}
-.filter-toggle:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px #fa4a153b;
-}
-
-/* labels ("Service:", "Min Rating:") */
-.filter-label {
-  font-weight: 600;
-  color: #111827;    /* gray-900 */
-  font-size: 0.875rem;
-}
-
-/* wrapper for the checkbox options */
-.filter-options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-/* style each individual checkbox + text */
-.filter-option {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-size: 0.875rem;
-  color: #4b5563;              /* gray-700 */
-}
-
-/* the rating <select> dropdown */
-.filter-select {
-  position: relative;
-  appearance: none;                /* hide default arrow */
-  background-color: #fff;
-  border: 1px solid #d1d5db;       /* gray-300 */
-  border-radius: 0.5rem;           /* 8px */
-  padding: 0.5rem 2rem 0.5rem 0.75rem;
-  font-size: 0.875rem;
-  color: #1f2937;                   /* gray-800 */
-  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath fill='%236B7280' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.75rem center;
-  background-size: 10px 6px;
-  transition: 
-    border-color 200ms ease, 
-    box-shadow 200ms ease;
-}
-.filter-select:hover {
-  border-color: #a1a1aa;           /* gray-400 */
-}
-.filter-select:focus {
-  outline: none;
-  border-color: #fa4b15;           /* fuchsia-600 */
-  box-shadow: 0 0 0 3px #fa4a1548;
-}
-
 /* ─── EMPTY STATE ───────────────────────── */
 .empty-state {
   text-align: center;
@@ -296,7 +198,6 @@ html, body {
   align-items: center;
   justify-content: space-between;
   padding: 0.5rem 1rem;
-  border-bottom: 1px solid #e5e7eb;
   background: #ffffff;
 }
 
@@ -313,59 +214,6 @@ html, body {
   z-index: 1;
 }
 
-/* ─── HAMBURGER MENU ICON ───────────────────────── */
-.hamburger-menu {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  background: none;
-  border: none;
-  padding: 0.25rem;
-  cursor: pointer;
-}
-
-.hamburger-menu span {
-  display: block;
-  width: 10px;
-  height: 2px;
-  background: #111827;  /* gray-900 */
-  margin: 1px 0;
-  border-radius: 1px;
-}
-
-/* ─── SITE TITLE ───────────────────────────────── */
-.site-title {
-  font-size: 1rem;              /* 32px */
-  text-align: center;
-  font-weight: 600;
-  color: #1f2937;               /* gray-800 */
-  letter-spacing: -0.02em;
-}
-
-/* ─── POSTAL CODE INPUT ───────────────────────── */
-.postal-input {
-  display: block;
-  width: 90px;
-  height: 30px;
-  text-align: center;
-  font-size: 0.8rem;
-  font-weight: 550;
-  border: 1px solid #d1d5db;   /* gray-300 */
-  border-radius: 0.5rem;       /* 8px */
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  transition: border-color 200ms ease, box-shadow 200ms ease;
-}
-
-.postal-input::placeholder {
-  color: #9ca3af;               /* gray-400 */
-}
-
-.postal-input:focus {
-  outline: none;
-  border-color: #fa4b15;        /* blue-500 */
-  box-shadow: 0 0 0 3px #fa4a1534;
-}
-
 /* ─── MAIN CONTENT PADDING ───────────────────────── */
 .app-main {
   padding: 1.5rem 1rem;   /* 24px vertical, 16px horizontal */
@@ -379,45 +227,6 @@ html, body {
   justify-content: space-between;
   margin-bottom: 1rem;
   gap: 1rem;
-}
-
-/* ─── SORT WRAPPER ───────────────────────────────── */
-.sort-wrapper {
-  display: flex;
-  align-items: center;
-  font-weight: 600;
-  color: #1f2937;
-}
-
-/* ─── SEARCH BAR CENTERING ──────────────────────── */
-.search-wrapper {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 1rem;    /* keep your existing spacing */
-}
-
-.search-input {
-  width: 50%;            /* fill available space in wrapper */
-  max-width: 400px;       /* cap how wide it can grow */
-  margin: 0;              /* reset any auto-margins */
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
-  border: 1px solid #d1d5db;       /* gray-300 */
-  border-radius: 0.5rem;           /* 8px */
-  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-  transition: 
-    border-color 200ms ease,
-    box-shadow 200ms ease;
-}
-
-.search-input::placeholder {
-  color: #9ca3af;         /* gray-400 */
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: #fa4b15;  /* fuchsia-600 */
-  box-shadow: 0 0 0 3px #fa4a1538;
 }
 
 /* ─── FADE-IN ON SCROLL ─────────────────────────── */
@@ -438,6 +247,26 @@ html, body {
   inset: 0;
   background: rgba(0,0,0,0.4);
   z-index: 50;
+}
+
+/* ─── HAMBURGER MENU ICON ───────────────────────── */
+.hamburger-menu {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 0.25rem;
+  cursor: pointer;
+}
+
+.hamburger-menu span {
+  display: block;
+  width: 10px;
+  height: 2px;
+  background: #111827;  /* gray-900 */
+  margin: 1px 0;
+  border-radius: 1px;
 }
 
 /* ─── SIDE MENU ─────────────────────────────────── */
@@ -500,29 +329,4 @@ html, body {
   width: 8rem;
   border: 1px solid #d1d5db;
   border-radius: 0.5rem;
-}
-
-/* ─── ENTER POSTAL BUTTON ───────────────────────── */
-.enter-postal-button {
-  display: inline-block;
-  margin-top: 4rem;
-  padding: 0.75rem 1.5rem;
-  font-size: 1rem;
-  font-weight: 600;
-  background-color: #fa4b15;
-  color: white;
-  border: none;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  transition: 
-    background-color 200ms ease,
-    transform 100ms ease;
-}
-.enter-postal-button:hover {
-  background-color: #fa4b15;
-  transform: translateY(-1px);
-}
-.enter-postal-button:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px #fa4b15;
 }
